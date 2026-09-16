@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Complaint = require("../models/Complaint");
 const User = require("../models/User");
 const calculatePriority = require("../utils/priorityCalculator");
