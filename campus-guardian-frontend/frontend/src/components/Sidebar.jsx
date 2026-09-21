@@ -1,22 +1,22 @@
 import { NavLink } from 'react-router-dom';
 import {
-  BarChart3, LayoutDashboard, Search, TriangleAlert, Users, Wrench, ArrowLeft
+  BarChart3, CalendarDays, LayoutDashboard, Search, TriangleAlert, Users, Wrench, ArrowLeft, ClipboardList
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const ADMIN_LINKS = [
-  { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
-  { to: '/admin/complaints', label: 'Complaints', icon: Wrench, roles: ['admin', 'staff', 'security'] },
-  { to: '/admin/emergencies', label: 'Emergencies', icon: TriangleAlert, roles: ['admin', 'security'] },
-  { to: '/admin/lost-found', label: 'Lost & found', icon: Search, roles: ['admin', 'security'] },
-  { to: '/admin/users', label: 'Users', icon: Users, roles: ['admin'] },
-  { to: '/admin/analytics', label: 'Analytics', icon: BarChart3, roles: ['admin'] }
+  { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, adminOnly: true },
+  { to: '/admin/complaints', label: 'Complaints', icon: Wrench, adminOnly: false },
+  { to: '/admin/emergencies', label: 'Emergencies', icon: TriangleAlert, adminOnly: false },
+  { to: '/admin/lost-found', label: 'Lost & found', icon: Search, adminOnly: true },
+  { to: '/admin/users', label: 'Users', icon: Users, adminOnly: true },
+  { to: '/admin/analytics', label: 'Analytics', icon: BarChart3, adminOnly: true },
+  { to: '/admin/leaves', label: 'Leave applications', icon: ClipboardList, adminOnly: true }
 ];
 
 const Sidebar = ({ open, onNavigate }) => {
-  const { user } = useAuth();
-  const role = String(user?.role || '').toLowerCase();
-  const links = ADMIN_LINKS.filter((l) => l.roles.includes(role));
+  const { isAdmin } = useAuth();
+  const links = ADMIN_LINKS.filter((l) => isAdmin || !l.adminOnly);
 
   return (
     <aside className={`cg-sidebar ${open ? 'open' : ''}`}>

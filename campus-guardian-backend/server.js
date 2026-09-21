@@ -15,6 +15,8 @@ const emergencyRoutes = require("./routes/emergencyRoutes");
 const lostFoundRoutes = require("./routes/lostFoundRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const leaveRoutes = require("./routes/leaveRoutes");
+const profileRoutes = require("./routes/profileRoutes");
 
 // Connect to MongoDB
 connectDB();
@@ -67,6 +69,8 @@ app.use("/api/emergencies", emergencyRoutes);
 app.use("/api/lost-found", lostFoundRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/leaves", leaveRoutes);
+app.use("/api/profile", profileRoutes);
 
 // 404 handler
 app.use(notFound);

@@ -1,31 +1,50 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { LogOut, Mail, Phone, ShieldCheck, User } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { updateProfile } from '../services/authService';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { KeyRound, Phone, ShieldCheck, UserRound } from 'lucide-react';
+import { getProfile, updateProfile } from '../services/profileService';
 import { getErrorMessage } from '../services/api';
-import StatusBadge from '../components/StatusBadge';
-import { formatDate } from '../utils/auth';
+import { useAuth } from '../context/AuthContext';
+import Loading from '../components/Loading';
 
 const Profile = () => {
-  const { user, logout, applyUser } = useAuth();
-  const navigate = useNavigate();
-  const [form, setForm] = useState({ name: user?.name || '', phone: user?.phone || '' });
+  const { user } = useAuth();
+  const [profile, setProfile] = useState(null);
+  const [form, setForm] = useState({ name: '', mobile: '' });
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const change = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const data = await getProfile();
+        if (!active) return;
+        setProfile(data);
+        setForm({ name: data?.name || user?.name || '', mobile: data?.mobile ?? data?.phone ?? user?.mobile ?? user?.phone ?? '' });
+      } catch (err) {
+        if (active) {
+          setError(getErrorMessage(err));
+          setForm({ name: user?.name || '', mobile: user?.mobile ?? user?.phone ?? '' });
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [user]);
 
   const save = async (e) => {
     e.preventDefault();
     setError('');
-    setMessage('');
+    setSuccess('');
     setSaving(true);
     try {
       const updated = await updateProfile(form);
-      applyUser({ ...user, ...(updated || form) });
-      setMessage('Profile saved.');
+      setProfile(updated);
+      setForm({ name: updated?.name || form.name, mobile: updated?.mobile ?? updated?.phone ?? form.mobile });
+      setSuccess('Profile updated successfully.');
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -33,66 +52,67 @@ const Profile = () => {
     }
   };
 
-  const signOut = () => {
-    logout();
-    navigate('/login');
-  };
+  if (loading) return <Loading label="Loading profile..." rows={3} />;
+
+  const role = String(profile?.role || user?.role || 'user').replace(/^./, (c) => c.toUpperCase());
+  const email = profile?.email || user?.email || '';
 
   return (
-    <div className="container cg-page" style={{ maxWidth: 680 }}>
-      <h1 className="cg-page-title">Profile</h1>
-      <p className="cg-page-sub">Keep your contact details current so the campus team can reach you.</p>
+    <div className="container cg-page" style={{ maxWidth: 760 }}>
+      <h1 className="cg-page-title">My profile</h1>
+      <p className="cg-page-sub">Update your account details and security settings.</p>
+
+      {error && <div className="alert alert-danger py-2 small">{error}</div>}
+      {success && <div className="alert alert-success py-2 small">{success}</div>}
 
       <div className="cg-card mb-3">
-        <div className="cg-card-body d-flex flex-wrap gap-3 align-items-center">
-          <span className="cg-brand-mark" style={{ width: 48, height: 48 }}><User size={22} /></span>
-          <div className="flex-grow-1">
-            <div className="h5 mb-1">{user?.name}</div>
-            <div className="small text-muted-cg d-flex flex-wrap gap-3">
-              <span className="d-inline-flex align-items-center gap-1"><Mail size={13} /> {user?.email}</span>
-              {user?.phone && <span className="d-inline-flex align-items-center gap-1"><Phone size={13} /> {user.phone}</span>}
+        <div className="cg-card-body">
+          <div className="d-flex align-items-center gap-3 mb-4">
+            <div className="cg-brand-mark" style={{ width: 48, height: 48 }}><UserRound size={23} /></div>
+            <div>
+              <h2 className="h5 mb-1">{form.name || 'Account'}</h2>
+              <div className="small text-muted-cg">{email}</div>
+              <span className="badge text-bg-light mt-1">{role}</span>
             </div>
           </div>
-          <div className="d-flex flex-column gap-2 align-items-end">
-            <StatusBadge status={user?.role || 'student'} />
-            {user?.createdAt && <span className="small text-muted-cg">Joined {formatDate(user.createdAt)}</span>}
-          </div>
+
+          <form onSubmit={save}>
+            <div className="row g-3">
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="profileName">Full name</label>
+                <div className="input-group">
+                  <span className="input-group-text bg-white"><UserRound size={15} /></span>
+                  <input id="profileName" className="form-control" value={form.name} onChange={(e) => setForm((v) => ({ ...v, name: e.target.value }))} required />
+                </div>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label" htmlFor="profileMobile">Mobile number</label>
+                <div className="input-group">
+                  <span className="input-group-text bg-white"><Phone size={15} /></span>
+                  <input id="profileMobile" className="form-control" value={form.mobile} onChange={(e) => setForm((v) => ({ ...v, mobile: e.target.value }))} placeholder="Enter mobile number" inputMode="tel" />
+                </div>
+              </div>
+              <div className="col-12">
+                <label className="form-label" htmlFor="profileEmail">Email</label>
+                <input id="profileEmail" className="form-control" value={email} disabled />
+                <div className="form-text">Email is kept unchanged from your login account.</div>
+              </div>
+            </div>
+            <button type="submit" className="btn btn-guard mt-4" disabled={saving}>{saving ? 'Saving...' : 'Save profile'}</button>
+          </form>
         </div>
       </div>
 
       <div className="cg-card">
-        <form className="cg-card-body" onSubmit={save} noValidate>
-          <h2 className="h6 mb-3">Edit details</h2>
-          {error && <div className="alert alert-danger py-2 small">{error}</div>}
-          {message && <div className="alert alert-success py-2 small">{message}</div>}
-
-          <div className="mb-3">
-            <label className="form-label" htmlFor="pname">Full name</label>
-            <input id="pname" name="name" className="form-control" value={form.name} onChange={change} required />
+        <div className="cg-card-body d-flex align-items-center justify-content-between gap-3 flex-wrap">
+          <div className="d-flex align-items-center gap-2">
+            <span className="cg-stat-icon" style={{ background: 'var(--cg-teal-soft)', color: 'var(--cg-deep)' }}><ShieldCheck size={18} /></span>
+            <div>
+              <strong>Account security</strong>
+              <div className="small text-muted-cg">Change your password whenever you need to.</div>
+            </div>
           </div>
-
-          <div className="mb-3">
-            <label className="form-label" htmlFor="pphone">Phone</label>
-            <input id="pphone" name="phone" className="form-control" value={form.phone} onChange={change} />
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label" htmlFor="pemail">Email</label>
-            <input id="pemail" className="form-control" value={user?.email || ''} disabled />
-            <div className="form-text">Your campus email cannot be changed here.</div>
-          </div>
-
-          <div className="d-flex flex-wrap gap-2">
-            <button type="submit" className="btn btn-guard" disabled={saving}>{saving ? 'Saving...' : 'Save changes'}</button>
-            <button type="button" className="btn btn-guard-outline" onClick={signOut}><LogOut size={15} className="me-2" />Sign out</button>
-          </div>
-        </form>
-      </div>
-
-      <div className="cg-card mt-3">
-        <div className="cg-card-body d-flex gap-3 small text-muted-cg">
-          <ShieldCheck size={18} style={{ color: 'var(--cg-deep)' }} className="flex-shrink-0" />
-          <span>Your phone number is shared only with campus staff handling your report, never on public listings.</span>
+          <Link to="/change-password" className="btn btn-guard-outline"><KeyRound size={15} /> Change / Forgot Password</Link>
         </div>
       </div>
     </div>

@@ -20,6 +20,8 @@ import CreateLostFound from './pages/CreateLostFound';
 import LostFoundDetails from './pages/LostFoundDetails';
 import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
+import ChangePassword from './pages/ChangePassword';
+import LeaveApplication from './pages/LeaveApplication';
 
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminComplaints from './pages/admin/AdminComplaints';
@@ -27,6 +29,7 @@ import AdminEmergencies from './pages/admin/AdminEmergencies';
 import AdminLostFound from './pages/admin/AdminLostFound';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
+import AdminLeaves from './pages/admin/AdminLeaves';
 
 // Public and student pages: navbar, content, footer.
 const SiteLayout = ({ children }) => (
@@ -88,6 +91,8 @@ const App = () => (
     <Route path="/lost-found/:id" element={student(<LostFoundDetails />)} />
     <Route path="/notifications" element={student(<Notifications />)} />
     <Route path="/profile" element={student(<Profile />)} />
+    <Route path="/change-password" element={student(<ChangePassword />)} />
+    <Route path="/leave" element={student(<LeaveApplication />)} />
 
     <Route path="/admin/dashboard" element={admin(<AdminDashboard />)} />
     <Route path="/admin/complaints" element={admin(<AdminComplaints />)} />
@@ -95,6 +100,7 @@ const App = () => (
     <Route path="/admin/lost-found" element={admin(<AdminLostFound />)} />
     <Route path="/admin/users" element={admin(<AdminUsers />)} />
     <Route path="/admin/analytics" element={admin(<AdminAnalytics />)} />
+    <Route path="/admin/leaves" element={admin(<AdminLeaves />)} />
 
     <Route path="*" element={<SiteLayout><NotFound /></SiteLayout>} />
   </Routes>

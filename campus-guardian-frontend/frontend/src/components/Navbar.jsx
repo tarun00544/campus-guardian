@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
-  Bell, LayoutDashboard, LogOut, Menu, Search, ShieldCheck, TriangleAlert, User, Wrench, X
+  Bell, CalendarDays, LayoutDashboard, LogOut, Menu, Search, ShieldCheck, TriangleAlert, User, Wrench, X
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getNotifications, markRead } from '../services/notificationService';
 import { formatDate } from '../utils/auth';
 
 const Navbar = ({ onToggleSidebar, showSidebarToggle = false }) => {
-  const { user, isAuthenticated, isAdmin, isStaff, isSecurity, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, isStaff, logout } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
@@ -68,7 +68,8 @@ const Navbar = ({ onToggleSidebar, showSidebarToggle = false }) => {
     ? [
       { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { to: '/report-problem', label: 'Report a problem', icon: Wrench },
-      { to: '/lost-found', label: 'Lost & found', icon: Search }
+      { to: '/lost-found', label: 'Lost & found', icon: Search },
+      ...(user?.role === 'student' ? [{ to: '/leave', label: 'Leave', icon: CalendarDays }] : [])
     ]
     : [];
 
@@ -97,8 +98,8 @@ const Navbar = ({ onToggleSidebar, showSidebarToggle = false }) => {
                 <Icon size={16} /> {label}
               </NavLink>
             ))}
-            {(isAdmin || isStaff || isSecurity) && (
-              <NavLink to={isAdmin ? '/admin/dashboard' : isSecurity ? '/admin/emergencies' : '/admin/complaints'} className="cg-nav-link">
+            {(isAdmin || isStaff) && (
+              <NavLink to={isAdmin ? '/admin/dashboard' : '/admin/emergencies'} className="cg-nav-link">
                 <ShieldCheck size={16} /> Admin
               </NavLink>
             )}
@@ -176,8 +177,8 @@ const Navbar = ({ onToggleSidebar, showSidebarToggle = false }) => {
                 <NavLink to="/my-complaints" className="cg-nav-link d-block mb-1" onClick={() => setMenuOpen(false)}>My complaints</NavLink>
                 <NavLink to="/notifications" className="cg-nav-link d-block mb-1" onClick={() => setMenuOpen(false)}>Notifications</NavLink>
                 <NavLink to="/profile" className="cg-nav-link d-block mb-1" onClick={() => setMenuOpen(false)}>Profile</NavLink>
-                {(isAdmin || isStaff || isSecurity) && (
-                  <NavLink to={isAdmin ? '/admin/dashboard' : isSecurity ? '/admin/emergencies' : '/admin/complaints'} className="cg-nav-link d-block mb-1" onClick={() => setMenuOpen(false)}>
+                {(isAdmin || isStaff) && (
+                  <NavLink to={isAdmin ? '/admin/dashboard' : '/admin/emergencies'} className="cg-nav-link d-block mb-1" onClick={() => setMenuOpen(false)}>
                     Admin console
                   </NavLink>
                 )}
