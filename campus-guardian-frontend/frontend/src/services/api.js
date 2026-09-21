@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getToken, clearAuth } from '../utils/auth';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://campus-guardian-backend-vbg3.onrender.com/api';
 
 // Uploaded files are served from the server root, not from /api
 export const SERVER_URL = API_URL.replace(/\/api\/?$/, '');
