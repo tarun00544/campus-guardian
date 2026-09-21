@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, SlidersHorizontal } from 'lucide-react';
-import { getAllComplaints, getUsers } from '../../services/adminService';
-import { getComplaints, assignComplaint, updateComplaintStatus } from '../../services/complaintService';
+import { getAllComplaints, getAssignableUsers } from '../../services/adminService';
+import { assignComplaint, updateComplaintStatus, deleteComplaint } from '../../services/complaintService';
 import { getErrorMessage } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
@@ -14,15 +14,8 @@ import { useAuth } from '../../context/AuthContext';
 
 const STATUSES = ['Reported', 'Assigned', 'In Progress', 'Resolved', 'Rejected'];
 
-const isActive = (user) => user?.isActive !== false;
-
 const AdminComplaints = () => {
-  const { isAdmin, user } = useAuth();
-  const role = String(user?.role || '').toLowerCase();
-  const canAssign = isAdmin;
-
   const [complaints, setComplaints] = useState([]);
-  const [assignees, setAssignees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
@@ -33,14 +26,15 @@ const AdminComplaints = () => {
   const [nextStatus, setNextStatus] = useState('');
   const [assignTarget, setAssignTarget] = useState(null);
   const [assignee, setAssignee] = useState('');
+  const [assignableUsers, setAssignableUsers] = useState([]);
   const [working, setWorking] = useState(false);
   const [actionError, setActionError] = useState('');
+  const { isAdmin } = useAuth();
 
   const load = async () => {
     setLoading(true);
     try {
-      // Admins see the complete queue. Staff/security see only their assigned duties.
-      const data = isAdmin ? await getAllComplaints() : await getComplaints();
+      const data = await getAllComplaints();
       setComplaints(data);
       setError('');
     } catch (err) {
@@ -50,23 +44,13 @@ const AdminComplaints = () => {
     }
   };
 
-  const loadAssignees = async () => {
-    if (!canAssign) return;
-    try {
-      const users = await getUsers();
-      setAssignees(
-        users.filter(
-          (u) => ['staff', 'security'].includes(String(u.role || '').toLowerCase()) && isActive(u)
-        )
-      );
-    } catch (err) {
-      setError(getErrorMessage(err));
-    }
-  };
+  useEffect(() => { load(); }, []);
 
   useEffect(() => {
-    load();
-    loadAssignees();
+    if (!isAdmin) return;
+    getAssignableUsers()
+      .then(setAssignableUsers)
+      .catch(() => setAssignableUsers([]));
   }, [isAdmin]);
 
   const visible = useMemo(() => {
@@ -76,16 +60,8 @@ const AdminComplaints = () => {
       if (status !== 'All' && s !== status.toLowerCase()) return false;
       if (category !== 'All' && c.category !== category) return false;
       if (!q) return true;
-      return [
-        c.title,
-        c.description,
-        c.location,
-        c.category,
-        c.reportedBy?.name,
-        c.reportedBy?.email,
-        c.assignedTo?.name,
-        c.assignedTo?.email,
-      ].filter(Boolean).join(' ').toLowerCase().includes(q);
+      return [c.title, c.description, c.location, c.category, c.reportedBy?.name, c.user?.name]
+        .filter(Boolean).join(' ').toLowerCase().includes(q);
     });
   }, [complaints, query, status, category]);
 
@@ -104,16 +80,24 @@ const AdminComplaints = () => {
     }
   };
 
+  const removeComplaint = async (complaint) => {
+    if (!isAdmin) return;
+    const id = complaint._id || complaint.id;
+    if (!window.confirm(`Delete complaint "${complaint.title}" permanently?`)) return;
+    setWorking(true); setActionError('');
+    try { await deleteComplaint(id); await load(); }
+    catch (err) { setActionError(getErrorMessage(err)); }
+    finally { setWorking(false); }
+  };
+
   const saveAssignee = async () => {
     if (!assignTarget || !assignee) {
-      setActionError('Select an active staff or security member.');
+      setActionError('Select a staff or security user.');
       return;
     }
-
     setWorking(true);
     setActionError('');
     try {
-      // The backend expects the MongoDB User _id, not a name/email string.
       await assignComplaint(assignTarget._id || assignTarget.id, { assignedTo: assignee });
       setAssignTarget(null);
       setAssignee('');
@@ -125,29 +109,10 @@ const AdminComplaints = () => {
     }
   };
 
-  const openAssign = (complaint) => {
-    const currentId = complaint.assignedTo?._id || '';
-    setAssignTarget(complaint);
-    setAssignee(currentId);
-    setActionError('');
-  };
-
-  const roleTitle = role === 'staff'
-    ? 'My assigned complaints'
-    : role === 'security'
-      ? 'Assigned complaints'
-      : 'Complaints';
-
-  const roleSub = role === 'staff'
-    ? 'Review complaints assigned to you and update their progress.'
-    : role === 'security'
-      ? 'Review complaints assigned to you and update their progress when required.'
-      : 'Filter the queue, assign an owner and move each report forward.';
-
   return (
     <>
-      <h1 className="cg-page-title">{roleTitle}</h1>
-      <p className="cg-page-sub">{roleSub}</p>
+      <h1 className="cg-page-title">Complaints</h1>
+      <p className="cg-page-sub">Filter the queue, assign an owner and move each report forward.</p>
 
       {error && <div className="alert alert-danger py-2 small">{error}</div>}
 
@@ -158,13 +123,7 @@ const AdminComplaints = () => {
               <label className="form-label" htmlFor="q">Search</label>
               <div className="input-group">
                 <span className="input-group-text bg-white"><Search size={15} /></span>
-                <input
-                  id="q"
-                  className="form-control"
-                  placeholder="Title, location or reporter"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
+                <input id="q" className="form-control" placeholder="Title, location or reporter" value={query} onChange={(e) => setQuery(e.target.value)} />
               </div>
             </div>
             <div className="col-6 col-lg-3">
@@ -182,12 +141,7 @@ const AdminComplaints = () => {
               </select>
             </div>
             <div className="col-lg-1">
-              <button
-                type="button"
-                className="btn btn-guard-outline w-100"
-                onClick={() => { setQuery(''); setStatus('All'); setCategory('All'); }}
-                aria-label="Clear filters"
-              >
+              <button type="button" className="btn btn-guard-outline w-100" onClick={() => { setQuery(''); setStatus('All'); setCategory('All'); }} aria-label="Clear filters">
                 <SlidersHorizontal size={15} />
               </button>
             </div>
@@ -198,14 +152,14 @@ const AdminComplaints = () => {
       {loading ? (
         <Loading label="Loading complaints..." rows={4} />
       ) : visible.length === 0 ? (
-        <EmptyState title="No complaints match" message="There are no complaints matching your current access and filters." />
+        <EmptyState title="No complaints match" message="Change the filters or clear the search." />
       ) : (
         <div className="cg-card cg-table-wrap">
           <table className="cg-table">
             <thead>
               <tr>
                 <th>Title</th><th>Category</th><th>Location</th><th>Reported by</th>
-                <th>Priority</th><th>Status</th><th>Assigned to</th><th>Date</th><th>Actions</th>
+                <th>Priority</th><th>Status</th><th>Date</th><th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -214,36 +168,21 @@ const AdminComplaints = () => {
                   <td><Link to={`/complaints/${c._id || c.id}`}>{c.title}</Link></td>
                   <td>{c.category || '—'}</td>
                   <td>{c.location || '—'}</td>
-                  <td>
-                    <div>{c.reportedBy?.name || c.user?.name || '—'}</div>
-                    {c.reportedBy?.email && <div className="small text-muted-cg">{c.reportedBy.email}</div>}
-                  </td>
+                  <td>{c.reportedBy?.name || c.user?.name || '—'}</td>
                   <td>{c.priority ? <StatusBadge status={c.priority} /> : '—'}</td>
                   <td><StatusBadge status={c.status} /></td>
-                  <td>{c.assignedTo?.name || 'Unassigned'}</td>
                   <td className="text-muted-cg">{formatDate(c.createdAt)}</td>
                   <td>
-                    <div className="d-flex gap-2 flex-wrap">
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-guard-outline"
-                        onClick={() => {
-                          setStatusTarget(c);
-                          setNextStatus(c.status || 'Reported');
-                          setActionError('');
-                        }}
-                      >
+                    <div className="d-flex gap-2">
+                      <button type="button" className="btn btn-sm btn-guard-outline"
+                        onClick={() => { setStatusTarget(c); setNextStatus(c.status || 'Reported'); setActionError(''); }}>
                         Status
                       </button>
-                      {canAssign && (
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-guard-outline"
-                          onClick={() => openAssign(c)}
-                        >
-                          Assign
-                        </button>
-                      )}
+                      {isAdmin && <button type="button" className="btn btn-sm btn-guard-outline"
+                        onClick={() => { setAssignTarget(c); setAssignee(c.assignedTo?._id || ''); setActionError(''); }}>
+                        Assign
+                      </button>}
+                      {isAdmin && <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => removeComplaint(c)} disabled={working}>Delete</button>}
                     </div>
                   </td>
                 </tr>
@@ -277,29 +216,35 @@ const AdminComplaints = () => {
 
       <Modal
         open={Boolean(assignTarget)}
-        title="Assign duty"
+        title="Assign staff"
         onClose={() => setAssignTarget(null)}
         footer={(
           <>
             <button type="button" className="btn btn-guard-outline" onClick={() => setAssignTarget(null)}>Cancel</button>
-            <button type="button" className="btn btn-guard" onClick={saveAssignee} disabled={working || !assignee}>
-              {working ? 'Assigning...' : 'Assign'}
+            <button type="button" className="btn btn-guard" onClick={saveAssignee} disabled={working}>
+              {working ? 'Saving...' : 'Assign'}
             </button>
           </>
         )}
       >
         {actionError && <div className="alert alert-danger py-2 small">{actionError}</div>}
-        <p className="small text-muted-cg mb-3">{assignTarget?.title}</p>
-        <label className="form-label" htmlFor="assignee">Staff / security member</label>
+        <p className="small text-muted-cg">{assignTarget?.title}</p>
+        <label className="form-label" htmlFor="assignee">Assign to staff / security</label>
         <select id="assignee" className="form-select" value={assignee} onChange={(e) => setAssignee(e.target.value)}>
-          <option value="">Select a person</option>
-          {assignees.map((u) => (
-            <option key={u._id || u.id} value={u._id || u.id}>
-              {u.name} — {u.role} {u.email ? `(${u.email})` : ''}
-            </option>
-          ))}
+          <option value="">Select a registered user</option>
+          {['staff', 'security'].map((role) => {
+            const group = assignableUsers.filter((u) => u.role === role);
+            if (!group.length) return null;
+            return (
+              <optgroup key={role} label={role === 'staff' ? 'Staff' : 'Security'}>
+                {group.map((u) => (
+                  <option key={u._id} value={u._id}>{u.name} — {u.email}</option>
+                ))}
+              </optgroup>
+            );
+          })}
         </select>
-        <div className="form-text">Only active staff and security accounts can receive complaint duties.</div>
+        {assignableUsers.length === 0 && <div className="form-text text-danger">No active staff/security users available. First create the account, then change its role in Users.</div>}
       </Modal>
     </>
   );

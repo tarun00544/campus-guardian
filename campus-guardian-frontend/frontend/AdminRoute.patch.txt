@@ -1,0 +1,6 @@
+AdminRoute.jsx:
+Change:
+const STAFF_ALLOWED = ['/admin/emergencies', '/admin/complaints'];
+To:
+const STAFF_ALLOWED = ['/admin/emergencies', '/admin/complaints', '/admin/leave-scan'];
+Your existing isStaff() includes security, so security can open only these operational routes.

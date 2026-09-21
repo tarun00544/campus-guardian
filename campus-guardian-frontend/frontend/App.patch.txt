@@ -1,0 +1,7 @@
+App.jsx:
+1. Import:
+   import LeaveApplication from './pages/LeaveApplication';
+   import LeaveQrScanner from './pages/LeaveQrScanner';
+2. Add:
+   <Route path="/leave" element={student(<LeaveApplication />)} />
+   <Route path="/admin/leave-scan" element={admin(<LeaveQrScanner />)} />

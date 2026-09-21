@@ -5,7 +5,7 @@ import Loading from './Loading';
 
 // Admins get everything. Staff and security get the response desk only.
 const STAFF_ALLOWED = ['/admin/complaints'];
-const SECURITY_ALLOWED = ['/admin/emergencies', '/admin/complaints', '/admin/lost-found'];
+const SECURITY_ALLOWED = ['/admin/emergencies', '/admin/complaints', '/admin/lost-found', '/admin/leave-scan'];
 
 const AdminRoute = ({ children }) => {
   const { isAuthenticated, isAdmin, isStaff, isSecurity, loading } = useAuth();

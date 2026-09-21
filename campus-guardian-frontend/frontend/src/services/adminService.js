@@ -32,3 +32,20 @@ export const getAnalytics = async () => {
   const res = await api.get('/admin/analytics');
   return unwrap(res, 'analytics') || {};
 };
+
+export const getAssignableUsers = async () => {
+  try {
+    const res = await api.get('/admin/assignable-users');
+    return asList(unwrap(res));
+  } catch (error) {
+    // Compatibility fallback for an older backend build that does not yet
+    // expose /admin/assignable-users. The /admin/users endpoint is already
+    // admin-protected, so the role filter remains server-authorized.
+    const status = error?.response?.status;
+    if (status !== 404) throw error;
+    const users = await getUsers();
+    return users.filter((user) =>
+      user?.isActive !== false && ['staff', 'security'].includes(String(user?.role || '').toLowerCase())
+    );
+  }
+};

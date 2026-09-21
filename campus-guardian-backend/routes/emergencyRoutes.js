@@ -5,6 +5,7 @@ const {
   getMyEmergencies,
   getEmergencyById,
   updateEmergencyStatus,
+  deleteEmergency,
 } = require("../controllers/emergencyController");
 const protect = require("../middleware/authMiddleware");
 const requireRole = require("../middleware/roleMiddleware");
@@ -21,5 +22,6 @@ router
 router.get("/my", getMyEmergencies);
 router.get("/:id", getEmergencyById);
 router.put("/:id/status", requireRole("security", "admin"), updateEmergencyStatus);
+router.delete("/:id", requireRole("admin"), deleteEmergency);
 
 module.exports = router;

@@ -5,6 +5,8 @@ import Sidebar from './components/Sidebar';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
+import AdminOnlyRoute from './components/AdminOnlyRoute';
+import StudentOnlyRoute from './components/StudentOnlyRoute';
 
 import Landing from './pages/Landing';
 import Login from './pages/Login';
@@ -22,6 +24,7 @@ import Notifications from './pages/Notifications';
 import Profile from './pages/Profile';
 import ChangePassword from './pages/ChangePassword';
 import LeaveApplication from './pages/LeaveApplication';
+import LeaveQrScanner from './pages/LeaveQrScanner';
 
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminComplaints from './pages/admin/AdminComplaints';
@@ -92,7 +95,7 @@ const App = () => (
     <Route path="/notifications" element={student(<Notifications />)} />
     <Route path="/profile" element={student(<Profile />)} />
     <Route path="/change-password" element={student(<ChangePassword />)} />
-    <Route path="/leave" element={student(<LeaveApplication />)} />
+    <Route path="/leave" element={<SiteLayout><StudentOnlyRoute><LeaveApplication /></StudentOnlyRoute></SiteLayout>} />
 
     <Route path="/admin/dashboard" element={admin(<AdminDashboard />)} />
     <Route path="/admin/complaints" element={admin(<AdminComplaints />)} />
@@ -100,7 +103,8 @@ const App = () => (
     <Route path="/admin/lost-found" element={admin(<AdminLostFound />)} />
     <Route path="/admin/users" element={admin(<AdminUsers />)} />
     <Route path="/admin/analytics" element={admin(<AdminAnalytics />)} />
-    <Route path="/admin/leaves" element={admin(<AdminLeaves />)} />
+    <Route path="/admin/leave-scan" element={admin(<LeaveQrScanner />)} />
+    <Route path="/admin/leaves" element={<AdminOnlyRoute><AdminLayout><AdminLeaves /></AdminLayout></AdminOnlyRoute>} />
 
     <Route path="*" element={<SiteLayout><NotFound /></SiteLayout>} />
   </Routes>

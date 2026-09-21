@@ -5,24 +5,27 @@ const {
   getAllEmergencies,
   getAllLostFoundItems,
   getAllUsers,
+  getAssignableUsers,
   updateUserRole,
   updateUserStatus,
   getAnalytics,
 } = require("../controllers/adminController");
 const protect = require("../middleware/authMiddleware");
 const adminOnly = require("../middleware/adminMiddleware");
+const requireRole = require("../middleware/roleMiddleware");
 
 const router = express.Router();
 
-router.use(protect, adminOnly);
+router.use(protect);
 
-router.get("/dashboard", getDashboardStats);
-router.get("/analytics", getAnalytics);
-router.get("/complaints", getAllComplaints);
-router.get("/emergencies", getAllEmergencies);
-router.get("/lost-found", getAllLostFoundItems);
-router.get("/users", getAllUsers);
-router.put("/users/:id/role", updateUserRole);
-router.put("/users/:id/status", updateUserStatus);
+router.get("/dashboard", adminOnly, getDashboardStats);
+router.get("/analytics", adminOnly, getAnalytics);
+router.get("/complaints", requireRole("admin", "staff", "security"), getAllComplaints);
+router.get("/emergencies", requireRole("admin", "security"), getAllEmergencies);
+router.get("/lost-found", requireRole("admin", "security"), getAllLostFoundItems);
+router.get("/users", adminOnly, getAllUsers);
+router.get("/assignable-users", adminOnly, getAssignableUsers);
+router.put("/users/:id/role", adminOnly, updateUserRole);
+router.put("/users/:id/status", adminOnly, updateUserStatus);
 
 module.exports = router;

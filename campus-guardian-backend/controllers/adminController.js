@@ -58,9 +58,15 @@ const getDashboardStats = async (req, res, next) => {
 // @access  Private (admin)
 const getAllComplaints = async (req, res, next) => {
   try {
-    const complaints = await Complaint.find()
-      .populate("reportedBy", "name email role")
-      .populate("assignedTo", "name email role")
+    const filter = {};
+    const currentRole = String(req.user.role || "").trim().toLowerCase();
+    if (["staff", "security"].includes(currentRole)) {
+      filter.assignedTo = req.user._id;
+    }
+
+    const complaints = await Complaint.find(filter)
+      .populate("reportedBy", "name email phone role")
+      .populate("assignedTo", "name email phone role")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -203,6 +209,29 @@ const updateUserStatus = async (req, res, next) => {
   }
 };
 
+
+// @desc    Get active staff/security users available for assignment
+// @route   GET /api/admin/assignable-users
+// @access  Private (admin)
+const getAssignableUsers = async (req, res, next) => {
+  try {
+    const users = await User.find({
+      role: { $in: ["staff", "security"] },
+      isActive: true,
+    })
+      .select("_id name email phone role isActive")
+      .sort({ role: 1, name: 1 });
+
+    res.status(200).json({
+      success: true,
+      message: "Assignable staff and security users fetched successfully",
+      data: users,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Get analytics data
 // @route   GET /api/admin/analytics
 // @access  Private (admin)
@@ -267,6 +296,7 @@ module.exports = {
   getAllEmergencies,
   getAllLostFoundItems,
   getAllUsers,
+  getAssignableUsers,
   updateUserRole,
   updateUserStatus,
   getAnalytics,

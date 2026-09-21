@@ -191,10 +191,32 @@ const updateEmergencyStatus = async (req, res, next) => {
   }
 };
 
+// @desc    Delete an emergency alert
+// @route   DELETE /api/emergencies/:id
+// @access  Private (admin only)
+const deleteEmergency = async (req, res, next) => {
+  try {
+    const emergency = await Emergency.findById(req.params.id);
+    if (!emergency) {
+      return res.status(404).json({ success: false, message: "Emergency alert not found" });
+    }
+
+    await emergency.deleteOne();
+    res.status(200).json({
+      success: true,
+      message: "Emergency alert deleted successfully",
+      data: {},
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createEmergency,
   getEmergencies,
   getMyEmergencies,
   getEmergencyById,
   updateEmergencyStatus,
+  deleteEmergency,
 };

@@ -1,36 +1,10 @@
 import api, { asList, unwrap } from './api';
-
-export const createComplaint = async (data) => {
-  const res = await api.post('/complaints', data);
-  return unwrap(res, 'complaint');
-};
-
-export const getMyComplaints = async () => {
-  const res = await api.get('/complaints/my');
-  return asList(unwrap(res, 'complaints'));
-};
-
-export const getComplaints = async (params = {}) => {
-  const res = await api.get('/complaints', { params });
-  return asList(unwrap(res, 'complaints'));
-};
-
-export const getComplaint = async (id) => {
-  const res = await api.get(`/complaints/${id}`);
-  return unwrap(res, 'complaint');
-};
-
-export const upvoteComplaint = async (id) => {
-  const res = await api.post(`/complaints/${id}/upvote`);
-  return unwrap(res, 'complaint');
-};
-
-export const updateComplaintStatus = async (id, status) => {
-  const res = await api.put(`/complaints/${id}/status`, { status });
-  return unwrap(res, 'complaint');
-};
-
-export const assignComplaint = async (id, payload) => {
-  const res = await api.put(`/complaints/${id}/assign`, payload);
-  return unwrap(res, 'complaint');
-};
+export const getComplaints = async (params = {}) => asList(unwrap(await api.get('/complaints', { params })));
+export const getMyComplaints = async () => asList(unwrap(await api.get('/complaints/my')));
+export const getComplaint = async (id) => unwrap(await api.get(`/complaints/${id}`), 'complaint');
+export const createComplaint = async (payload) => unwrap(await api.post('/complaints', payload), 'complaint');
+export const updateComplaint = async (id, payload) => unwrap(await api.put(`/complaints/${id}`, payload), 'complaint');
+export const deleteComplaint = async (id) => unwrap(await api.delete(`/complaints/${id}`));
+export const upvoteComplaint = async (id) => unwrap(await api.post(`/complaints/${id}/upvote`), 'complaint');
+export const updateComplaintStatus = async (id, status) => unwrap(await api.put(`/complaints/${id}/status`, { status }), 'complaint');
+export const assignComplaint = async (id, payload) => unwrap(await api.put(`/complaints/${id}/assign`, payload), 'complaint');

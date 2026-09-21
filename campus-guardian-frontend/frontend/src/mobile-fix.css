@@ -1,0 +1,32 @@
+/* Campus Guardian mobile/responsive fixes */
+html, body, #root { min-width: 0; }
+body { overflow-x: hidden; }
+
+.cg-main, .cg-admin-main { min-width: 0; }
+.cg-page { width: 100%; }
+
+@media (max-width: 991.98px) {
+  .cg-nav .container-fluid { padding-left: 10px !important; padding-right: 10px !important; }
+  .cg-brand { min-width: 0; max-width: 48vw; }
+  .cg-brand > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cg-brand span small { display: none; }
+  .cg-admin-main { overflow-x: hidden; }
+  .cg-table-wrap { width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .cg-table { min-width: 900px; }
+  .cg-modal { width: min(520px, calc(100vw - 24px)); }
+}
+
+@media (max-width: 575.98px) {
+  .cg-page { padding: 18px 0 40px; }
+  .cg-page-title { font-size: 1.35rem; }
+  .cg-page-sub { font-size: .9rem; margin-bottom: 16px; }
+  .cg-admin-main { padding: 14px 10px 44px; }
+  .cg-card-body { padding: 14px; }
+  .cg-stat { padding: 13px 14px; }
+  .cg-stat .value { font-size: 1.55rem; }
+  .cg-dropdown { right: -48px; width: min(340px, calc(100vw - 20px)); }
+  .cg-emergency-button { padding: 17px; gap: 12px; }
+  .cg-emergency-button .title { font-size: 1.15rem; }
+  .cg-emergency-ring { width: 44px; height: 44px; }
+  .btn { min-height: 38px; }
+}

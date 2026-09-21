@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, ClipboardList, Search, TriangleAlert, Wrench } from 'lucide-react';
+import { Bell, CalendarDays, ClipboardList, Search, TriangleAlert, Wrench } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getMyComplaints } from '../services/complaintService';
 import { getNotifications } from '../services/notificationService';
@@ -71,7 +71,8 @@ const StudentDashboard = () => {
             {[
               { to: '/report-problem', label: 'Report a problem', icon: Wrench },
               { to: '/lost-found', label: 'Lost & found', icon: Search },
-              { to: '/my-complaints', label: 'My complaints', icon: ClipboardList }
+              { to: '/my-complaints', label: 'My complaints', icon: ClipboardList },
+              { to: '/leave', label: 'Leave application', icon: CalendarDays }
             ].map(({ to, label, icon: Icon }) => (
               <div className="col-6 col-md-4" key={to}>
                 <Link to={to} className="cg-card cg-card-link h-100">

@@ -14,6 +14,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(params.get('expired') ? 'Your session has ended. Sign in again to continue.' : '');
   const [submitting, setSubmitting] = useState(false);
+  const passwordChangedMessage = location.state?.passwordChanged ? (location.state?.message || 'Password changed successfully. Please login with your new password.') : '';
 
   const change = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -42,6 +43,7 @@ const Login = () => {
 
       <div className="cg-card">
         <form className="cg-card-body" onSubmit={submit} noValidate>
+          {passwordChangedMessage && <div className="alert alert-success py-2 small">{passwordChangedMessage}</div>}
           {error && <div className="alert alert-danger py-2 small">{error}</div>}
 
           <div className="mb-3">

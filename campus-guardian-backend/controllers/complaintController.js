@@ -74,9 +74,8 @@ const getComplaints = async (req, res, next) => {
 
     const filter = {};
 
-    // Operational roles only see complaints assigned to them.
-    // Admins can see the complete queue; students keep the existing public feed.
-    if (["staff", "security"].includes(req.user.role)) {
+    const currentRole = String(req.user.role || "").trim().toLowerCase();
+    if (["staff", "security"].includes(currentRole)) {
       filter.assignedTo = req.user._id;
     }
 
@@ -135,17 +134,6 @@ const getComplaintById = async (req, res, next) => {
       });
     }
 
-    // Staff/security may only inspect complaints assigned to their account.
-    if (
-      ["staff", "security"].includes(req.user.role) &&
-      (!complaint.assignedTo || complaint.assignedTo._id.toString() !== req.user._id.toString())
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "You can only view complaints assigned to you",
-      });
-    }
-
     res.status(200).json({
       success: true,
       message: "Complaint fetched successfully",
@@ -171,22 +159,19 @@ const updateComplaint = async (req, res, next) => {
     }
 
     const isOwner = complaint.reportedBy.toString() === req.user._id.toString();
-    const isAdmin = req.user.role === "admin";
-    const isAssignedOperator =
-      ["staff", "security"].includes(req.user.role) &&
-      complaint.assignedTo &&
-      complaint.assignedTo.toString() === req.user._id.toString();
+    const currentRole = String(req.user.role || "").trim().toLowerCase();
+    const isPrivileged = ["admin", "staff"].includes(currentRole);
 
-    if (!isOwner && !isAdmin && !isAssignedOperator) {
+    if (!isOwner && !isPrivileged) {
       return res.status(403).json({
         success: false,
-        message: "You can only update complaints assigned to you",
+        message: "You are not authorized to update this complaint",
       });
     }
 
     // Students (owners) may only edit their own complaint's basic content,
     // and only while it is still in "Reported" status.
-    if (isOwner && !isAdmin && !isAssignedOperator) {
+    if (isOwner && !isPrivileged) {
       if (complaint.status !== "Reported") {
         return res.status(400).json({
           success: false,
@@ -228,22 +213,16 @@ const updateComplaint = async (req, res, next) => {
 // @access  Private (owner or admin)
 const deleteComplaint = async (req, res, next) => {
   try {
-    const complaint = await Complaint.findById(req.params.id);
-
-    if (!complaint) {
-      return res.status(404).json({
+    if (String(req.user.role || "").trim().toLowerCase() !== "admin") {
+      return res.status(403).json({
         success: false,
-        message: "Complaint not found",
+        message: "Only admin can delete complaints",
       });
     }
 
-    const isOwner = complaint.reportedBy.toString() === req.user._id.toString();
-
-    if (!isOwner && req.user.role !== "admin") {
-      return res.status(403).json({
-        success: false,
-        message: "You are not authorized to delete this complaint",
-      });
+    const complaint = await Complaint.findById(req.params.id);
+    if (!complaint) {
+      return res.status(404).json({ success: false, message: "Complaint not found" });
     }
 
     await complaint.deleteOne();
@@ -323,7 +302,7 @@ const updateComplaintStatus = async (req, res, next) => {
       });
     }
 
-    // Staff/security may only update complaints assigned to them.
+    // Staff and security may only update complaints assigned to them.
     if (
       ["staff", "security"].includes(req.user.role) &&
       (!complaint.assignedTo || complaint.assignedTo.toString() !== req.user._id.toString())
@@ -366,40 +345,23 @@ const assignComplaint = async (req, res, next) => {
   try {
     const { assignedTo } = req.body;
 
-    if (!assignedTo) {
+    if (!assignedTo || !mongoose.Types.ObjectId.isValid(assignedTo)) {
       return res.status(400).json({
         success: false,
-        message: "assignedTo (user id) is required",
+        message: "A valid staff/security user must be selected",
       });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(assignedTo)) {
-      return res.status(400).json({
-        success: false,
-        message: "assignedTo must be a valid user id",
-      });
-    }
-
-    const assignee = await User.findById(assignedTo).select("name email role isActive");
+    const assignee = await User.findOne({
+      _id: assignedTo,
+      role: { $in: ["staff", "security"] },
+      isActive: true,
+    }).select("_id name email role");
 
     if (!assignee) {
-      return res.status(404).json({
-        success: false,
-        message: "Assigned user not found",
-      });
-    }
-
-    if (!["staff", "security"].includes(assignee.role)) {
       return res.status(400).json({
         success: false,
-        message: "Complaints can only be assigned to staff or security users",
-      });
-    }
-
-    if (!assignee.isActive) {
-      return res.status(400).json({
-        success: false,
-        message: "This staff/security account is inactive",
+        message: "Select an active staff or security user from the assignment list",
       });
     }
 
@@ -412,13 +374,13 @@ const assignComplaint = async (req, res, next) => {
       });
     }
 
-    complaint.assignedTo = assignee._id;
+    complaint.assignedTo = assignedTo;
     complaint.status = "Assigned";
 
     await complaint.save();
 
     await createNotification({
-      user: assignee._id,
+      user: assignedTo,
       title: "New complaint assigned to you",
       message: `You have been assigned the complaint: "${complaint.title}"`,
       type: "complaint",
@@ -428,7 +390,7 @@ const assignComplaint = async (req, res, next) => {
     await createNotification({
       user: complaint.reportedBy,
       title: "Complaint assigned",
-      message: `Your complaint "${complaint.title}" has been assigned to ${assignee.role === "security" ? "security" : "staff"}`,
+      message: `Your complaint "${complaint.title}" has been assigned to a staff member`,
       type: "complaint",
       relatedId: complaint._id,
     });

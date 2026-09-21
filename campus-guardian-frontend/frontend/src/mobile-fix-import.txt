@@ -1,0 +1,2 @@
+Add this line at the bottom of src/index.css (or import from main.jsx):
+@import './mobile-fix.css';
