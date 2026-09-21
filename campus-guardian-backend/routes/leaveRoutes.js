@@ -4,6 +4,7 @@ const {
   getMyLeaves,
   getAllLeaves,
   reviewLeave,
+  deleteLeave,
   getLeaveQr,
   scanLeaveQr,
 } = require("../controllers/leaveController");
@@ -19,6 +20,7 @@ router.post("/", requireRole("student"), createLeave);
 router.get("/my", requireRole("student"), getMyLeaves);
 router.get("/admin", requireRole("admin"), getAllLeaves);
 router.put("/admin/:id", requireRole("admin"), reviewLeave);
+router.delete("/admin/:id", requireRole("admin"), deleteLeave);
 router.get("/:id/qr", requireRole("student"), getLeaveQr);
 
 // Scanning is an operational action for security/admin, not a leave-application role.

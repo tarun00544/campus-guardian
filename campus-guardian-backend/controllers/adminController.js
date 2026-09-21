@@ -213,6 +213,41 @@ const updateUserStatus = async (req, res, next) => {
 // @desc    Get active staff/security users available for assignment
 // @route   GET /api/admin/assignable-users
 // @access  Private (admin)
+// @desc    Delete a user
+// @route   DELETE /api/admin/users/:id
+// @access  Private (admin)
+const deleteUser = async (req, res, next) => {
+  try {
+    if (String(req.user._id) === String(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "You cannot delete your own admin account",
+      });
+    }
+
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+      data: { id: req.params.id },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get active staff/security users available for assignment
+// @route   GET /api/admin/assignable-users
+// @access  Private (admin)
 const getAssignableUsers = async (req, res, next) => {
   try {
     const users = await User.find({
@@ -299,5 +334,6 @@ module.exports = {
   getAssignableUsers,
   updateUserRole,
   updateUserStatus,
+  deleteUser,
   getAnalytics,
 };

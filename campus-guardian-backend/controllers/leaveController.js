@@ -104,6 +104,20 @@ const getAllLeaves = async (req, res, next) => {
   } catch (error) { next(error); }
 };
 
+const deleteLeave = async (req, res, next) => {
+  try {
+    const leave = await LeaveApplication.findById(req.params.id);
+    if (!leave) {
+      return res.status(404).json({ success: false, message: "Leave application not found" });
+    }
+
+    await leave.deleteOne();
+    res.json({ success: true, message: "Leave application deleted successfully", data: {} });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const reviewLeave = async (req, res, next) => {
   try {
     const { status, adminNote = "" } = req.body;
@@ -256,6 +270,7 @@ module.exports = {
   getMyLeaves,
   getAllLeaves,
   reviewLeave,
+  deleteLeave,
   getLeaveQr,
   scanLeaveQr,
 };

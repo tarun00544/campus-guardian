@@ -49,3 +49,8 @@ export const getAssignableUsers = async () => {
     );
   }
 };
+
+export const deleteUser = async (id) => {
+  const res = await api.delete(`/admin/users/${id}`);
+  return unwrap(res);
+};

@@ -8,6 +8,7 @@ const {
   getAssignableUsers,
   updateUserRole,
   updateUserStatus,
+  deleteUser,
   getAnalytics,
 } = require("../controllers/adminController");
 const protect = require("../middleware/authMiddleware");
@@ -27,5 +28,6 @@ router.get("/users", adminOnly, getAllUsers);
 router.get("/assignable-users", adminOnly, getAssignableUsers);
 router.put("/users/:id/role", adminOnly, updateUserRole);
 router.put("/users/:id/status", adminOnly, updateUserStatus);
+router.delete("/users/:id", adminOnly, deleteUser);
 
 module.exports = router;

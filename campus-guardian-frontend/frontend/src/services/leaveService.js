@@ -20,6 +20,11 @@ export const reviewLeave = async (id, status, adminNote = '') => {
   return unwrap(res);
 };
 
+export const deleteLeave = async (id) => {
+  const res = await api.delete(`/leaves/admin/${id}`);
+  return unwrap(res);
+};
+
 export const getLeaveQr = async (id) => {
   const res = await api.get(`/leaves/${id}/qr`);
   return unwrap(res);

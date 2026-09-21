@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Search, Users } from 'lucide-react';
-import { getUsers, updateUserRole, updateUserStatus } from '../../services/adminService';
+import { Search, Users, Trash2 } from 'lucide-react';
+import { getUsers, updateUserRole, updateUserStatus, deleteUser } from '../../services/adminService';
 import { getErrorMessage } from '../../services/api';
 import StatusBadge from '../../components/StatusBadge';
 import EmptyState from '../../components/EmptyState';
@@ -75,6 +75,24 @@ const AdminUsers = () => {
     }
   };
 
+  const removeUser = async (user) => {
+    const id = user._id || user.id;
+    if (!id) return;
+
+    const confirmed = window.confirm(
+      `Delete ${user.name || 'this user'} permanently? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setError('');
+    try {
+      await deleteUser(id);
+      await load();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
+  };
+
   return (
     <>
       <h1 className="cg-page-title">Users</h1>
@@ -130,6 +148,14 @@ const AdminUsers = () => {
                       </button>
                       <button type="button" className="btn btn-sm btn-guard-outline" onClick={() => toggleStatus(u)}>
                         {isActiveUser(u) ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => removeUser(u)}
+                        title="Delete user"
+                      >
+                        <Trash2 size={15} className="me-1" />Delete
                       </button>
                     </div>
                   </td>

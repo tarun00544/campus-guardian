@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, XCircle } from 'lucide-react';
-import { getAllLeaves, reviewLeave } from '../../services/leaveService';
+import { CheckCircle2, XCircle, Trash2 } from 'lucide-react';
+import { getAllLeaves, reviewLeave, deleteLeave } from '../../services/leaveService';
 import { getErrorMessage } from '../../services/api';
 import { formatDate } from '../../utils/auth';
 import StatusBadge from '../../components/StatusBadge';
@@ -30,6 +30,23 @@ const AdminLeaves = () => {
   const pendingCount = useMemo(() => leaves.filter((l) => l.status === 'Pending').length, [leaves]);
 
   const openReview = (leave, next) => { setTarget(leave); setNextStatus(next); setNote(''); };
+
+  const removeLeave = async (leave) => {
+    const studentName = leave.student?.name || 'this student';
+    const confirmed = window.confirm(`Delete this leave application from ${studentName}?\n\nThis cannot be undone.`);
+    if (!confirmed) return;
+
+    setWorking(true);
+    setError('');
+    try {
+      await deleteLeave(leave._id);
+      await load();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setWorking(false);
+    }
+  };
 
   const save = async () => {
     if (!target) return;
@@ -72,10 +89,15 @@ const AdminLeaves = () => {
                   <div className="col-12"><strong>Purpose</strong><div>{leave.purpose}</div></div>
                 </div>
                 {leave.adminNote && <div className="small text-muted-cg mt-3"><strong>Admin note:</strong> {leave.adminNote}</div>}
-                {leave.status === 'Pending' && <div className="d-flex gap-2 mt-3 flex-wrap">
-                  <button className="btn btn-sm btn-guard" onClick={() => openReview(leave, 'Approved')}><CheckCircle2 size={15} className="me-1" />Approve</button>
-                  <button className="btn btn-sm btn-guard-outline" onClick={() => openReview(leave, 'Rejected')}><XCircle size={15} className="me-1" />Reject</button>
-                </div>}
+                <div className="d-flex gap-2 mt-3 flex-wrap">
+                  {leave.status === 'Pending' && <>
+                    <button className="btn btn-sm btn-guard" onClick={() => openReview(leave, 'Approved')} disabled={working}><CheckCircle2 size={15} className="me-1" />Approve</button>
+                    <button className="btn btn-sm btn-guard-outline" onClick={() => openReview(leave, 'Rejected')} disabled={working}><XCircle size={15} className="me-1" />Reject</button>
+                  </>}
+                  <button className="btn btn-sm btn-outline-danger" onClick={() => removeLeave(leave)} disabled={working}>
+                    <Trash2 size={15} className="me-1" />Delete
+                  </button>
+                </div>
               </div>
             </div>
           ))}
