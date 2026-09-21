@@ -8,7 +8,7 @@ import { getNotifications, markRead } from '../services/notificationService';
 import { formatDate } from '../utils/auth';
 
 const Navbar = ({ onToggleSidebar, showSidebarToggle = false }) => {
-  const { user, isAuthenticated, isAdmin, isStaff, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, isStaff, isSecurity, logout } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
@@ -97,8 +97,8 @@ const Navbar = ({ onToggleSidebar, showSidebarToggle = false }) => {
                 <Icon size={16} /> {label}
               </NavLink>
             ))}
-            {(isAdmin || isStaff) && (
-              <NavLink to={isAdmin ? '/admin/dashboard' : '/admin/emergencies'} className="cg-nav-link">
+            {(isAdmin || isStaff || isSecurity) && (
+              <NavLink to={isAdmin ? '/admin/dashboard' : isSecurity ? '/admin/emergencies' : '/admin/complaints'} className="cg-nav-link">
                 <ShieldCheck size={16} /> Admin
               </NavLink>
             )}
@@ -157,14 +157,10 @@ const Navbar = ({ onToggleSidebar, showSidebarToggle = false }) => {
                 <Link to="/register" className="btn btn-sm btn-guard">Create account</Link>
               </div>
             )}
-                <button
-  type="button"
-  className={`btn btn-sm btn-guard-outline d-lg-none ${showSidebarToggle ? 'd-none' : ''}`}
-  onClick={() => setMenuOpen((v) => !v)}
-  aria-label="Open menu"
->
-  {menuOpen ? <X size={18} /> : <Menu size={18} />}
-</button>
+
+            <button type="button" className="btn btn-sm btn-guard-outline d-lg-none" onClick={() => setMenuOpen((v) => !v)} aria-label="Open menu">
+              {menuOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
           </div>
         </div>
 
@@ -180,8 +176,8 @@ const Navbar = ({ onToggleSidebar, showSidebarToggle = false }) => {
                 <NavLink to="/my-complaints" className="cg-nav-link d-block mb-1" onClick={() => setMenuOpen(false)}>My complaints</NavLink>
                 <NavLink to="/notifications" className="cg-nav-link d-block mb-1" onClick={() => setMenuOpen(false)}>Notifications</NavLink>
                 <NavLink to="/profile" className="cg-nav-link d-block mb-1" onClick={() => setMenuOpen(false)}>Profile</NavLink>
-                {(isAdmin || isStaff) && (
-                  <NavLink to={isAdmin ? '/admin/dashboard' : '/admin/emergencies'} className="cg-nav-link d-block mb-1" onClick={() => setMenuOpen(false)}>
+                {(isAdmin || isStaff || isSecurity) && (
+                  <NavLink to={isAdmin ? '/admin/dashboard' : isSecurity ? '/admin/emergencies' : '/admin/complaints'} className="cg-nav-link d-block mb-1" onClick={() => setMenuOpen(false)}>
                     Admin console
                   </NavLink>
                 )}

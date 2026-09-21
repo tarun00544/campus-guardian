@@ -29,7 +29,7 @@ router
   .delete(deleteComplaint);
 
 router.post("/:id/upvote", upvoteComplaint);
-router.put("/:id/status", requireRole("staff", "admin"), updateComplaintStatus);
+router.put("/:id/status", requireRole("staff", "security", "admin"), updateComplaintStatus);
 router.put("/:id/assign", requireRole("admin"), assignComplaint);
 
 module.exports = router;

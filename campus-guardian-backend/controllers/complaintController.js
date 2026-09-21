@@ -74,7 +74,9 @@ const getComplaints = async (req, res, next) => {
 
     const filter = {};
 
-    if (req.user.role === "staff") {
+    // Operational roles only see complaints assigned to them.
+    // Admins can see the complete queue; students keep the existing public feed.
+    if (["staff", "security"].includes(req.user.role)) {
       filter.assignedTo = req.user._id;
     }
 
@@ -133,6 +135,17 @@ const getComplaintById = async (req, res, next) => {
       });
     }
 
+    // Staff/security may only inspect complaints assigned to their account.
+    if (
+      ["staff", "security"].includes(req.user.role) &&
+      (!complaint.assignedTo || complaint.assignedTo._id.toString() !== req.user._id.toString())
+    ) {
+      return res.status(403).json({
+        success: false,
+        message: "You can only view complaints assigned to you",
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: "Complaint fetched successfully",
@@ -158,18 +171,22 @@ const updateComplaint = async (req, res, next) => {
     }
 
     const isOwner = complaint.reportedBy.toString() === req.user._id.toString();
-    const isPrivileged = ["admin", "staff"].includes(req.user.role);
+    const isAdmin = req.user.role === "admin";
+    const isAssignedOperator =
+      ["staff", "security"].includes(req.user.role) &&
+      complaint.assignedTo &&
+      complaint.assignedTo.toString() === req.user._id.toString();
 
-    if (!isOwner && !isPrivileged) {
+    if (!isOwner && !isAdmin && !isAssignedOperator) {
       return res.status(403).json({
         success: false,
-        message: "You are not authorized to update this complaint",
+        message: "You can only update complaints assigned to you",
       });
     }
 
     // Students (owners) may only edit their own complaint's basic content,
     // and only while it is still in "Reported" status.
-    if (isOwner && !isPrivileged) {
+    if (isOwner && !isAdmin && !isAssignedOperator) {
       if (complaint.status !== "Reported") {
         return res.status(400).json({
           success: false,
@@ -306,9 +323,9 @@ const updateComplaintStatus = async (req, res, next) => {
       });
     }
 
-    // Staff may only update complaints assigned to them.
+    // Staff/security may only update complaints assigned to them.
     if (
-      req.user.role === "staff" &&
+      ["staff", "security"].includes(req.user.role) &&
       (!complaint.assignedTo || complaint.assignedTo.toString() !== req.user._id.toString())
     ) {
       return res.status(403).json({
@@ -356,6 +373,36 @@ const assignComplaint = async (req, res, next) => {
       });
     }
 
+    if (!mongoose.Types.ObjectId.isValid(assignedTo)) {
+      return res.status(400).json({
+        success: false,
+        message: "assignedTo must be a valid user id",
+      });
+    }
+
+    const assignee = await User.findById(assignedTo).select("name email role isActive");
+
+    if (!assignee) {
+      return res.status(404).json({
+        success: false,
+        message: "Assigned user not found",
+      });
+    }
+
+    if (!["staff", "security"].includes(assignee.role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Complaints can only be assigned to staff or security users",
+      });
+    }
+
+    if (!assignee.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: "This staff/security account is inactive",
+      });
+    }
+
     const complaint = await Complaint.findById(req.params.id);
 
     if (!complaint) {
@@ -365,13 +412,13 @@ const assignComplaint = async (req, res, next) => {
       });
     }
 
-    complaint.assignedTo = assignedTo;
+    complaint.assignedTo = assignee._id;
     complaint.status = "Assigned";
 
     await complaint.save();
 
     await createNotification({
-      user: assignedTo,
+      user: assignee._id,
       title: "New complaint assigned to you",
       message: `You have been assigned the complaint: "${complaint.title}"`,
       type: "complaint",
@@ -381,7 +428,7 @@ const assignComplaint = async (req, res, next) => {
     await createNotification({
       user: complaint.reportedBy,
       title: "Complaint assigned",
-      message: `Your complaint "${complaint.title}" has been assigned to a staff member`,
+      message: `Your complaint "${complaint.title}" has been assigned to ${assignee.role === "security" ? "security" : "staff"}`,
       type: "complaint",
       relatedId: complaint._id,
     });

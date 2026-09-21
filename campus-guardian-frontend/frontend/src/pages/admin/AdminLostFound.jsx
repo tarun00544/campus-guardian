@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { PackageSearch, Search } from 'lucide-react';
-import { getLostFound } from '../../services/lostFoundService';
+import { getLostFound, verifyRecovery } from '../../services/lostFoundService';
 import { getErrorMessage } from '../../services/api';
 import LostFoundCard from '../../components/LostFoundCard';
 import EmptyState from '../../components/EmptyState';
 import Loading from '../../components/Loading';
+import { useAuth } from '../../context/AuthContext';
 
 const TABS = ['All', 'Lost', 'Found'];
 
@@ -14,6 +15,8 @@ const AdminLostFound = () => {
   const [error, setError] = useState('');
   const [tab, setTab] = useState('All');
   const [query, setQuery] = useState('');
+  const [workingId, setWorkingId] = useState('');
+  const { isAdmin, isSecurity } = useAuth();
 
   useEffect(() => {
     let active = true;
@@ -43,6 +46,20 @@ const AdminLostFound = () => {
     lost: items.filter((i) => String(i.type).toLowerCase() === 'lost').length,
     found: items.filter((i) => String(i.type).toLowerCase() === 'found').length,
     closed: items.filter((i) => ['matched', 'returned', 'claimed', 'resolved'].includes(String(i.status).toLowerCase())).length
+  };
+
+  const confirmRecovery = async (item) => {
+    const id = item._id || item.id;
+    setWorkingId(id);
+    setError('');
+    try {
+      const updated = await verifyRecovery(id);
+      setItems((current) => current.map((x) => (x._id || x.id) === id ? updated : x));
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setWorkingId('');
+    }
   };
 
   return (
@@ -88,6 +105,16 @@ const AdminLostFound = () => {
           {visible.map((item) => (
             <div className="col-6 col-lg-4 col-xxl-3" key={item._id || item.id}>
               <LostFoundCard item={item} />
+              {(isAdmin || isSecurity) && String(item.status || '').toLowerCase() === 'verification pending' && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-guard w-100 mt-2"
+                  onClick={() => confirmRecovery(item)}
+                  disabled={workingId === (item._id || item.id)}
+                >
+                  {workingId === (item._id || item.id) ? 'Verifying...' : 'Verify recovery'}
+                </button>
+              )}
             </div>
           ))}
         </div>

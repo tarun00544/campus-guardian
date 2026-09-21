@@ -27,12 +27,15 @@ export const clearAuth = () => {
 
 export const isAdmin = (user) => ['admin', 'superadmin'].includes((user?.role || '').toLowerCase());
 
-export const isStaff = (user) => ['staff', 'security', 'responder'].includes((user?.role || '').toLowerCase());
+export const isStaff = (user) => ['staff'].includes((user?.role || '').toLowerCase());
+
+export const isSecurity = (user) => ['security'].includes((user?.role || '').toLowerCase());
 
 // Where a user lands after signing in, based on their role.
 export const homeRouteFor = (user) => {
   if (isAdmin(user)) return '/admin/dashboard';
-  if (isStaff(user)) return '/admin/emergencies';
+  if (isSecurity(user)) return '/admin/emergencies';
+  if (isStaff(user)) return '/admin/complaints';
   return '/dashboard';
 };
 

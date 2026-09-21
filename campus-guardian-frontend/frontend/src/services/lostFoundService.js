@@ -29,3 +29,8 @@ export const updateLostFoundStatus = async (id, status) => {
   const res = await api.put(`/lost-found/${id}/status`, { status });
   return unwrap(res, 'item');
 };
+
+export const verifyRecovery = async (id) => {
+  const res = await api.put(`/lost-found/${id}/verify`);
+  return unwrap(res, 'item');
+};

@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import * as authService from '../services/authService';
 import {
-  clearAuth, getStoredUser, getToken, setStoredUser, setToken, isAdmin, isStaff
+  clearAuth, getStoredUser, getToken, setStoredUser, setToken, isAdmin, isStaff, isSecurity
 } from '../utils/auth';
 
 const AuthContext = createContext(null);
@@ -73,7 +73,8 @@ export const AuthProvider = ({ children }) => {
     applyUser: (u) => { setUser(u); setStoredUser(u); },
     isAuthenticated: Boolean(user),
     isAdmin: isAdmin(user),
-    isStaff: isStaff(user)
+    isStaff: isStaff(user),
+    isSecurity: isSecurity(user)
   }), [user, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
