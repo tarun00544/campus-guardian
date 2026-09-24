@@ -1,7 +1,25 @@
-const jwt = require("jsonwebtoken");
+ const jwt = require("jsonwebtoken");
 const LeaveApplication = require("../models/LeaveApplication");
 const User = require("../models/User");
 const createNotification = require("../utils/createNotification");
+
+// The frontend uses <input type="datetime-local">, which intentionally sends
+// a date/time without a timezone (for example: 2026-09-25T05:06).
+// The app is intended for India, so interpret that value as IST instead of
+// letting Node/Render interpret it in the server's UTC timezone.
+const parseIndiaDateTime = (value) => {
+  if (typeof value !== "string") return new Date(value);
+
+  const trimmed = value.trim();
+  // Already timezone-aware: keep the supplied timezone/offset.
+  if (/([zZ]|[+-]\d{2}:?\d{2})$/.test(trimmed)) {
+    return new Date(trimmed);
+  }
+
+  // datetime-local values have no timezone. Treat them as Asia/Kolkata (IST).
+  const normalized = trimmed.length === 16 ? `${trimmed}:00` : trimmed;
+  return new Date(`${normalized}+05:30`);
+};
 
 const studentView = (leave) => ({
   _id: leave._id,
@@ -47,8 +65,8 @@ const createLeave = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Destination, start time, end time and purpose are required" });
     }
 
-    const start = new Date(fromDate);
-    const end = new Date(toDate);
+    const start = parseIndiaDateTime(fromDate);
+    const end = parseIndiaDateTime(toDate);
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
       return res.status(400).json({ success: false, message: "Please provide valid dates and times" });
     }
@@ -166,7 +184,9 @@ const getLeaveQr = async (req, res, next) => {
     if (!leave) return res.status(404).json({ success: false, message: "Leave application not found" });
     if (leave.status !== "Approved") return res.status(400).json({ success: false, message: "QR is available only for approved leave" });
     if ((leave.qrScanCount || 0) >= 2) return res.status(410).json({ success: false, message: "This QR code has already been used twice and is expired" });
-    if (new Date() < new Date(leave.fromDate)) return res.status(409).json({ success: false, message: "QR will become active at the approved departure time" });
+    // The QR may be displayed as soon as the leave is approved.
+    // The scanner below still enforces the approved departure/return window,
+    // so displaying the QR early does not allow an early departure scan.
     if (new Date() > new Date(leave.toDate)) return res.status(410).json({ success: false, message: "This leave QR has expired because the return time has passed" });
 
     const expiresAt = new Date(leave.toDate).getTime();
