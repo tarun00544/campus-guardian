@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+ import { useEffect, useState } from 'react';
 import { CalendarDays, Clock3, MapPin, QrCode, Send } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { createLeave, getLeaveQr, getMyLeaves } from '../services/leaveService';
@@ -102,7 +102,7 @@ const LeaveApplication = () => {
                 const now = new Date();
                 // Approved students can open their QR before departure.
                 // The backend scanner controls when OUT/IN scans are actually accepted.
-                const qrAvailable = leave.status === 'Approved' && scanCount < 2 && now < new Date(leave.toDate);
+                const qrAvailable = leave.status === 'Approved' && scanCount < 2;
                 return (
                   <div key={leave._id} className="border rounded p-3">
                     <div className="d-flex justify-content-between align-items-start gap-2 flex-wrap">
@@ -120,7 +120,9 @@ const LeaveApplication = () => {
                             <QrCode size={15} className="me-1" /> {qrLoading && qrLeave?._id === leave._id ? 'Opening QR...' : `Show QR (${scanCount === 0 ? 'OUT' : 'IN'})`}
                           </button>
                         ) : (
-                          <div className="alert alert-secondary py-2 small mb-0">QR is available after admin approval until the approved return time. Scanning is allowed at the approved departure/return time.</div>
+                          <div className="alert alert-secondary py-2 small mb-0">
+                            QR is available after admin approval. Security can scan it according to the approved leave time.
+                             </div>
                         )}
                         <div className="small text-muted-cg mt-2">Scans used: {scanCount}/2</div>
                       </div>
